@@ -821,22 +821,3 @@ static void layoutActionBar(YTReelWatchPlaybackOverlayView *self) {
     [[NSBundle bundleWithPath:[NSString stringWithFormat:@"%@/Frameworks/Module_Framework.framework", NSBundle.mainBundle.bundlePath]] load];
     %init;
 }
-
-// ################
-
-%hook YTSingleVideoController
-
-- (float)playbackRate {
-    // Check if the new rateModel system exists
-    if ([self respondsToSelector:@selector(rateModel)]) {
-        // Cast to our model class to avoid 'multiple methods named rate' error
-        YTPlaybackRateModel *model = (YTPlaybackRateModel *)[self rateModel];
-        if (model && [model respondsToSelector:@selector(rate)]) {
-            return model.rate;
-        }
-    }
-    // Fallback to normal speed if model isn't found, preventing the crash
-    return 1.0f;
-}
-
-%end

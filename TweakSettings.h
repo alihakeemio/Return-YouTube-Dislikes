@@ -19,7 +19,6 @@ void enableVoteSubmission(BOOL enabled);
 #define ExactDislikeKey @"RYD-EXACT-NUMBER"
 #define UseRawDataKey @"RYD-USE-RAW-DATA"
 #define UseRYDLikeDataKey @"RYD-USE-LIKE-DATA"
-#define SpeedCompatibilityKey @"RYD-SPEED-COMPATIBILITY"
 
 // Gesture settings keys (defined in Tweak.h, declared here for TweakSettings.x)
 extern BOOL GesturesEnabled(void);
@@ -33,6 +32,5 @@ extern BOOL GetGestureHapticFeedback(void);
 // Ambient mode settings
 extern BOOL GetDisableAmbientModePortrait(void);
 extern BOOL GetDisableAmbientModeFullscreen(void);
-extern BOOL SpeedCompatibilityEnabled();
 
 #endif

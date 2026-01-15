@@ -83,10 +83,3 @@ BOOL GetDisableAmbientModePortrait(void) {
 BOOL GetDisableAmbientModeFullscreen(void) {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"RYD-DISABLE-AMBIENT-FULLSCREEN"];
 }
-
-BOOL SpeedCompatibilityEnabled() {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSNumber *value = [defaults objectForKey:SpeedCompatibilityKey];
-    // Default to YES so the fix is active by default
-    return value ? [value boolValue] : YES; 
-}

@@ -121,13 +121,3 @@ BOOL GetDisableAmbientModeFullscreen(void);
 @interface YTReelWatchPlaybackOverlayView (RYD)
 @property (assign, nonatomic) BOOL didGetVote;
 @end
-
-
-// Define the new model that holds the speed value
-@interface YTPlaybackRateModel : NSObject
-@property(readonly, nonatomic) float rate;
-@end
-
-@interface YTSingleVideoController (RYD)
-- (YTPlaybackRateModel *)rateModel;
-@end
