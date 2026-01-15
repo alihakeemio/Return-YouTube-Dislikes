@@ -121,3 +121,12 @@ BOOL GetDisableAmbientModeFullscreen(void);
 @interface YTReelWatchPlaybackOverlayView (RYD)
 @property (assign, nonatomic) BOOL didGetVote;
 @end
+
+@interface YTPlaybackRateModel : NSObject
+- (instancetype)initWithRate:(float)rate label:(NSString *)label;
+@property(readonly, nonatomic) float rate;
+@end
+
+@interface YTSingleVideoController : NSObject
+- (id)rateModel; // The new YouTube property
+@end
