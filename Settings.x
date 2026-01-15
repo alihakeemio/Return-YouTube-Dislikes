@@ -4,8 +4,10 @@
 #import <YouTubeHeader/YTSettingsSectionItem.h>
 #import <YouTubeHeader/YTSettingsSectionItemManager.h>
 #import <YouTubeHeader/YTSettingsViewController.h>
+#import <YouTubeHeader/YTSettingsPickerViewController.h>
 #import "Settings.h"
 #import "TweakSettings.h"
+#import "Tweak.h"
 
 static const NSInteger RYDSection = 1080;
 
@@ -107,6 +109,120 @@ NSBundle *RYDBundle() {
         }
         settingItemId:0];
     [sectionItems addObject:rawData];
+
+    // ============== GESTURE SETTINGS ==============
+    
+    // Gesture mode options
+    NSArray *gestureModeOptions = @[@"Volume", @"Brightness", @"Seek", @"Disabled"];
+    
+    YTSettingsSectionItem *gesturesEnabled = [%c(YTSettingsSectionItem) switchItemWithTitle:@"Player Gestures"
+        titleDescription:@"Enable horizontal swipe gestures on the video player (3 zones: top, middle, bottom)"
+        accessibilityIdentifier:nil
+        switchOn:GesturesEnabled()
+        switchBlock:^BOOL (YTSettingsCell *cell, BOOL enabled) {
+            [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:GesturesEnabledKey];
+            return YES;
+        }
+        settingItemId:0];
+    [sectionItems addObject:gesturesEnabled];
+    
+    YTSettingsSectionItem *gestureTop = [%c(YTSettingsSectionItem) itemWithTitle:@"Top Section Gesture"
+        titleDescription:@"Action for horizontal swipe in top third of player"
+        accessibilityIdentifier:nil
+        detailTextBlock:^NSString *() {
+            return gestureModeOptions[GetGestureTopSelection()];
+        }
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+            NSMutableArray *rows = [NSMutableArray array];
+            for (NSString *option in gestureModeOptions) {
+                YTSettingsSectionItem *item = [%c(YTSettingsSectionItem) checkmarkItemWithTitle:option
+                    titleDescription:nil
+                    selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+                        [[NSUserDefaults standardUserDefaults] setInteger:[gestureModeOptions indexOfObject:option] forKey:GestureTopSelectionKey];
+                        [delegate reloadData];
+                        return YES;
+                    }];
+                [rows addObject:item];
+            }
+            YTSettingsPickerViewController *picker = [[%c(YTSettingsPickerViewController) alloc] initWithNavTitle:@"Top Section Gesture"
+                pickerSectionTitle:nil
+                rows:rows
+                selectedItemIndex:GetGestureTopSelection()
+                parentResponder:[delegate parentResponder]];
+            [delegate pushViewController:picker];
+            return YES;
+        }];
+    [sectionItems addObject:gestureTop];
+    
+    YTSettingsSectionItem *gestureMiddle = [%c(YTSettingsSectionItem) itemWithTitle:@"Middle Section Gesture"
+        titleDescription:@"Action for horizontal swipe in middle third of player"
+        accessibilityIdentifier:nil
+        detailTextBlock:^NSString *() {
+            return gestureModeOptions[GetGestureMiddleSelection()];
+        }
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+            NSMutableArray *rows = [NSMutableArray array];
+            for (NSString *option in gestureModeOptions) {
+                YTSettingsSectionItem *item = [%c(YTSettingsSectionItem) checkmarkItemWithTitle:option
+                    titleDescription:nil
+                    selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+                        [[NSUserDefaults standardUserDefaults] setInteger:[gestureModeOptions indexOfObject:option] forKey:GestureMiddleSelectionKey];
+                        [delegate reloadData];
+                        return YES;
+                    }];
+                [rows addObject:item];
+            }
+            YTSettingsPickerViewController *picker = [[%c(YTSettingsPickerViewController) alloc] initWithNavTitle:@"Middle Section Gesture"
+                pickerSectionTitle:nil
+                rows:rows
+                selectedItemIndex:GetGestureMiddleSelection()
+                parentResponder:[delegate parentResponder]];
+            [delegate pushViewController:picker];
+            return YES;
+        }];
+    [sectionItems addObject:gestureMiddle];
+    
+    YTSettingsSectionItem *gestureBottom = [%c(YTSettingsSectionItem) itemWithTitle:@"Bottom Section Gesture"
+        titleDescription:@"Action for horizontal swipe in bottom third of player"
+        accessibilityIdentifier:nil
+        detailTextBlock:^NSString *() {
+            return gestureModeOptions[GetGestureBottomSelection()];
+        }
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+            NSMutableArray *rows = [NSMutableArray array];
+            for (NSString *option in gestureModeOptions) {
+                YTSettingsSectionItem *item = [%c(YTSettingsSectionItem) checkmarkItemWithTitle:option
+                    titleDescription:nil
+                    selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+                        [[NSUserDefaults standardUserDefaults] setInteger:[gestureModeOptions indexOfObject:option] forKey:GestureBottomSelectionKey];
+                        [delegate reloadData];
+                        return YES;
+                    }];
+                [rows addObject:item];
+            }
+            YTSettingsPickerViewController *picker = [[%c(YTSettingsPickerViewController) alloc] initWithNavTitle:@"Bottom Section Gesture"
+                pickerSectionTitle:nil
+                rows:rows
+                selectedItemIndex:GetGestureBottomSelection()
+                parentResponder:[delegate parentResponder]];
+            [delegate pushViewController:picker];
+            return YES;
+        }];
+    [sectionItems addObject:gestureBottom];
+    
+    YTSettingsSectionItem *gestureHaptic = [%c(YTSettingsSectionItem) switchItemWithTitle:@"Haptic Feedback"
+        titleDescription:@"Vibrate when gesture is activated"
+        accessibilityIdentifier:nil
+        switchOn:GetGestureHapticFeedback()
+        switchBlock:^BOOL (YTSettingsCell *cell, BOOL enabled) {
+            [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:GestureHapticFeedbackKey];
+            return YES;
+        }
+        settingItemId:0];
+    [sectionItems addObject:gestureHaptic];
+
+    // ============== END GESTURE SETTINGS ==============
+
     NSString *settingsTitle = LOC(@"SETTINGS_TITLE");
     if ([delegate respondsToSelector:@selector(setSectionItems:forCategory:title:icon:titleDescription:headerHidden:)]) {
         YTIIcon *icon = [%c(YTIIcon) new];

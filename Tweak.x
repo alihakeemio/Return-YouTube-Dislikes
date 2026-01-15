@@ -508,6 +508,249 @@ static void layoutActionBar(YTReelWatchPlaybackOverlayView *self) {
 
 %end
 
+// ============== GESTURE CONTROLS ==============
+
+%hook YTWatchLayerViewController
+
+- (void)watchController:(YTWatchController *)watchController didSetPlayerViewController:(YTPlayerViewController *)playerViewController {
+    %orig;
+    if (playerViewController && GesturesEnabled()) {
+        if (!playerViewController.rydPanGesture) {
+            playerViewController.rydPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController
+                                                                                         action:@selector(rydHandlePanGesture:)];
+            playerViewController.rydPanGesture.delegate = playerViewController;
+            [playerViewController.playerView addGestureRecognizer:playerViewController.rydPanGesture];
+        }
+    }
+}
+
+%end
+
+%hook YTPlayerViewController
+
+%property (nonatomic, retain) UIPanGestureRecognizer *rydPanGesture;
+
+%new
+- (void)rydHandlePanGesture:(UIPanGestureRecognizer *)panGestureRecognizer {
+    // Haptic feedback generator
+    static UIImpactFeedbackGenerator *feedbackGenerator;
+    // Variables for storing initial values
+    static float initialVolume;
+    static float initialBrightness;
+    static CGFloat initialTime;
+    // Flags and state
+    static BOOL isValidHorizontalPan = NO;
+    static GestureSection gestureSection = GestureSectionInvalid;
+    static CGPoint startLocation;
+    static CGFloat deadzoneStartingXTranslation;
+    static CGFloat adjustedTranslationX;
+    
+    // Get settings
+    CGFloat deadzoneRadius = GetGestureDeadzone();
+    CGFloat sensitivityFactor = GetGestureSensitivity();
+    
+    // Volume control objects
+    static MPVolumeView *volumeView;
+    static UISlider *volumeViewSlider;
+    
+    // Initialize once
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        volumeView = [[MPVolumeView alloc] init];
+        for (UIView *view in volumeView.subviews) {
+            if ([view isKindOfClass:[UISlider class]]) {
+                volumeViewSlider = (UISlider *)view;
+                break;
+            }
+        }
+        feedbackGenerator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+    });
+    
+    // Get player bar controller for seeking
+    YTMainAppVideoPlayerOverlayViewController *mainVideoPlayerController = (YTMainAppVideoPlayerOverlayViewController *)self.childViewControllers.firstObject;
+    YTPlayerBarController *playerBarController = mainVideoPlayerController.playerBarController;
+    YTInlinePlayerBarContainerView *playerBar = playerBarController.playerBar;
+    
+    // Helper blocks
+    void (^adjustBrightness)(CGFloat, CGFloat) = ^(CGFloat translationX, CGFloat initBrightness) {
+        float brightnessSensitivityFactor = 3.0;
+        float newBrightness = initBrightness + ((translationX / 1000.0) * sensitivityFactor * brightnessSensitivityFactor);
+        newBrightness = fmaxf(fminf(newBrightness, 1.0), 0.0);
+        [[UIScreen mainScreen] setBrightness:newBrightness];
+    };
+    
+    void (^adjustVolume)(CGFloat, CGFloat) = ^(CGFloat translationX, CGFloat initVolume) {
+        float volumeSensitivityFactor = 3.0;
+        float newVolume = initVolume + ((translationX / 1000.0) * sensitivityFactor * volumeSensitivityFactor);
+        newVolume = fmaxf(fminf(newVolume, 1.0), 0.0);
+        CGFloat currentVolume = [[AVAudioSession sharedInstance] outputVolume];
+        if (fabs(newVolume - currentVolume) < 0.01 && currentVolume > 0.01 && currentVolume < 0.99) {
+            return;
+        }
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            volumeViewSlider.value = newVolume;
+        });
+    };
+    
+    void (^adjustSeek)(CGFloat, CGFloat) = ^(CGFloat translationX, CGFloat initTime) {
+        CGFloat totalTime = self.currentVideoTotalMediaTime;
+        CGFloat videoFraction = initTime / totalTime;
+        CGFloat initialTimeXPosition = [playerBar scrubXForScrubRange:videoFraction];
+        CGFloat seekSensitivityFactor = 1.0;
+        CGFloat newSeekXPosition = initialTimeXPosition + translationX * seekSensitivityFactor;
+        CGPoint newSeekPoint = CGPointMake(newSeekXPosition, 0);
+        [playerBarController didScrubToPoint:newSeekPoint];
+    };
+    
+    // Get gesture mode for section
+    GestureMode (^getModeForSection)(GestureSection) = ^GestureMode(GestureSection section) {
+        switch (section) {
+            case GestureSectionTop: return (GestureMode)GetGestureTopSelection();
+            case GestureSectionMiddle: return (GestureMode)GetGestureMiddleSelection();
+            case GestureSectionBottom: return (GestureMode)GetGestureBottomSelection();
+            default: return GestureModeDisabled;
+        }
+    };
+    
+    // Setup for gesture mode
+    void (^runSelectedGestureSetup)(GestureSection) = ^(GestureSection section) {
+        GestureMode mode = getModeForSection(section);
+        switch (mode) {
+            case GestureModeVolume:
+                initialVolume = [[AVAudioSession sharedInstance] outputVolume];
+                break;
+            case GestureModeBrightness:
+                initialBrightness = [UIScreen mainScreen].brightness;
+                break;
+            case GestureModeSeek:
+                initialTime = self.currentVideoMediaTime;
+                [playerBarController startScrubbing];
+                break;
+            case GestureModeDisabled:
+                break;
+        }
+    };
+    
+    // Changed handler
+    void (^runSelectedGestureChanged)(GestureSection) = ^(GestureSection section) {
+        GestureMode mode = getModeForSection(section);
+        switch (mode) {
+            case GestureModeVolume:
+                adjustVolume(adjustedTranslationX, initialVolume);
+                break;
+            case GestureModeBrightness:
+                adjustBrightness(adjustedTranslationX, initialBrightness);
+                break;
+            case GestureModeSeek:
+                adjustSeek(adjustedTranslationX, initialTime);
+                break;
+            case GestureModeDisabled:
+                break;
+        }
+    };
+    
+    // End handler
+    void (^runSelectedGestureEnded)(GestureSection) = ^(GestureSection section) {
+        GestureMode mode = getModeForSection(section);
+        if (mode == GestureModeSeek) {
+            [playerBarController endScrubbingForSeekSource:0];
+        }
+    };
+    
+    // Handle gesture states
+    if (panGestureRecognizer.state == UIGestureRecognizerStateBegan) {
+        startLocation = [panGestureRecognizer locationInView:self.view];
+        CGFloat viewHeight = self.view.bounds.size.height;
+        
+        if (startLocation.y <= viewHeight / 3.0) {
+            gestureSection = GestureSectionTop;
+        } else if (startLocation.y <= 2 * viewHeight / 3.0) {
+            gestureSection = GestureSectionMiddle;
+        } else if (startLocation.y <= viewHeight) {
+            gestureSection = GestureSectionBottom;
+        } else {
+            gestureSection = GestureSectionInvalid;
+        }
+        
+        // Cancel if section is disabled
+        if (getModeForSection(gestureSection) == GestureModeDisabled) {
+            panGestureRecognizer.state = UIGestureRecognizerStateCancelled;
+            return;
+        }
+        
+        isValidHorizontalPan = NO;
+        
+        // Cancel gesture if not activated after 1 second
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            if (!isValidHorizontalPan && panGestureRecognizer.state != UIGestureRecognizerStateEnded) {
+                panGestureRecognizer.state = UIGestureRecognizerStateCancelled;
+            }
+        });
+    }
+    
+    if (panGestureRecognizer.state == UIGestureRecognizerStateChanged) {
+        CGPoint translation = [panGestureRecognizer translationInView:self.view];
+        
+        if (!isValidHorizontalPan) {
+            if (fabs(translation.x) > fabs(translation.y)) {
+                CGFloat distanceFromStart = hypot(translation.x, translation.y);
+                if (distanceFromStart < deadzoneRadius) {
+                    return;
+                }
+                
+                isValidHorizontalPan = YES;
+                deadzoneStartingXTranslation = translation.x;
+                adjustedTranslationX = 0;
+                
+                runSelectedGestureSetup(gestureSection);
+                
+                if (GetGestureHapticFeedback()) {
+                    [feedbackGenerator prepare];
+                    [feedbackGenerator impactOccurred];
+                }
+            } else {
+                panGestureRecognizer.state = UIGestureRecognizerStateCancelled;
+                return;
+            }
+        }
+        
+        if (isValidHorizontalPan) {
+            adjustedTranslationX = translation.x - deadzoneStartingXTranslation;
+            runSelectedGestureChanged(gestureSection);
+        }
+    }
+    
+    if (panGestureRecognizer.state == UIGestureRecognizerStateEnded && isValidHorizontalPan) {
+        runSelectedGestureEnded(gestureSection);
+    }
+}
+
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
+        YTMainAppVideoPlayerOverlayViewController *mainVideoPlayerController = (YTMainAppVideoPlayerOverlayViewController *)self.childViewControllers.firstObject;
+        YTPlayerBarController *playerBarController = mainVideoPlayerController.playerBarController;
+        YTInlinePlayerBarContainerView *playerBar = playerBarController.playerBar;
+        
+        if (otherGestureRecognizer == playerBar.scrubGestureRecognizer) {
+            return NO;
+        }
+        
+        YTFineScrubberFilmstripView *fineScrubberFilmstrip = [playerBar valueForKey:@"_fineScrubberFilmstrip"];
+        if (fineScrubberFilmstrip) {
+            YTFineScrubberFilmstripCollectionView *filmstripCollectionView = [fineScrubberFilmstrip valueForKey:@"_filmstripCollectionView"];
+            if (filmstripCollectionView && otherGestureRecognizer == filmstripCollectionView.panGestureRecognizer) {
+                return NO;
+            }
+        }
+    }
+    return YES;
+}
+
+%end
+
+// ============== END GESTURE CONTROLS ==============
+
 %ctor {
     cache = [NSCache new];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];

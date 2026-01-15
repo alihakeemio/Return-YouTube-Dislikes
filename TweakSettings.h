@@ -19,4 +19,13 @@ void enableVoteSubmission(BOOL enabled);
 #define UseRawDataKey @"RYD-USE-RAW-DATA"
 #define UseRYDLikeDataKey @"RYD-USE-LIKE-DATA"
 
+// Gesture settings keys (defined in Tweak.h, declared here for TweakSettings.x)
+extern BOOL GesturesEnabled(void);
+extern NSInteger GetGestureTopSelection(void);
+extern NSInteger GetGestureMiddleSelection(void);
+extern NSInteger GetGestureBottomSelection(void);
+extern CGFloat GetGestureDeadzone(void);
+extern CGFloat GetGestureSensitivity(void);
+extern BOOL GetGestureHapticFeedback(void);
+
 #endif
