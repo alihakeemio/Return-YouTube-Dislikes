@@ -821,3 +821,20 @@ static void layoutActionBar(YTReelWatchPlaybackOverlayView *self) {
     [[NSBundle bundleWithPath:[NSString stringWithFormat:@"%@/Frameworks/Module_Framework.framework", NSBundle.mainBundle.bundlePath]] load];
     %init;
 }
+
+%hook YTSingleVideoController
+
+- (float)playbackRate {
+    // Only run the bridge if the toggle is ON and the main tweak is ON
+    if (TweakEnabled() && SpeedCompatibilityEnabled()) {
+        if ([self respondsToSelector:@selector(rateModel)]) {
+            id model = [self rateModel];
+            if (model && [model respondsToSelector:@selector(rate)]) {
+                return [model rate];
+            }
+        }
+    }
+    return %orig;
+}
+
+%end

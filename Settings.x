@@ -313,6 +313,17 @@ NSBundle *RYDBundle() {
     [sectionItems addObject:disableAmbientFullscreen];
 
     // ============== END GESTURE SETTINGS ==============
+    // >>> INSERT THE NEW CODE HERE <<<
+    YTSettingsSectionItem *speedCompat = [%c(YTSettingsSectionItem) switchItemWithTitle:@"Speed Compatibility"
+        titleDescription:@"Fixes crashes with some third-party tweaks (like YTLite) on newer YouTube versions."
+        accessibilityIdentifier:nil
+        switchOn:SpeedCompatibilityEnabled()
+        switchBlock:^BOOL (YTSettingsCell *cell, BOOL enabled) {
+            [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:SpeedCompatibilityKey];
+            return YES;
+        }
+        settingItemId:0];
+    [sectionItems addObject:speedCompat];
 
     NSString *settingsTitle = LOC(@"SETTINGS_TITLE");
     if ([delegate respondsToSelector:@selector(setSectionItems:forCategory:title:icon:titleDescription:headerHidden:)]) {
