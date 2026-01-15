@@ -72,11 +72,13 @@ CGFloat GetGestureSensitivity(void);
 BOOL GetGestureHapticFeedback(void);
 
 // Player gesture interface extensions
+@class YTPlayerView;
+
 @interface YTPlayerViewController (RYDGestures) <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPanGestureRecognizer *rydPanGesture;
-@property (nonatomic, weak, readonly) UIView *playerView;
 @property (nonatomic, readonly) CGFloat currentVideoMediaTime;
 @property (nonatomic, readonly) CGFloat currentVideoTotalMediaTime;
+- (YTPlayerView *)playerView;
 - (void)rydHandlePanGesture:(UIPanGestureRecognizer *)panGestureRecognizer;
 @end
 
