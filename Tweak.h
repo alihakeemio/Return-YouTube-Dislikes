@@ -122,11 +122,17 @@ BOOL GetDisableAmbientModeFullscreen(void);
 @property (assign, nonatomic) BOOL didGetVote;
 @end
 
+// In Tweak.h
 @interface YTPlaybackRateModel : NSObject
-- (instancetype)initWithRate:(float)rate label:(NSString *)label;
 @property(readonly, nonatomic) float rate;
+- (instancetype)initWithRate:(float)rate label:(id)label;
 @end
 
-@interface YTSingleVideoController : NSObject
-- (id)rateModel; // The new YouTube property
+// Use a Category (RYD) to avoid the "duplicate interface" error
+@interface YTSingleVideoController (RYD)
+- (YTPlaybackRateModel *)rateModel;
+@end
+
+@interface YTPlaybackRateService : NSObject
+- (NSArray <YTPlaybackRateModel *> *)playbackRateModels;
 @end
