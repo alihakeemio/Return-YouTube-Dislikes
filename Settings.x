@@ -220,6 +220,97 @@ NSBundle *RYDBundle() {
         }
         settingItemId:0];
     [sectionItems addObject:gestureHaptic];
+    
+    // Deadzone setting
+    NSArray *deadzoneOptions = @[@"10", @"15", @"20", @"25", @"30", @"40", @"50"];
+    YTSettingsSectionItem *gestureDeadzone = [%c(YTSettingsSectionItem) itemWithTitle:@"Gesture Deadzone"
+        titleDescription:@"Minimum distance before gesture activates (in pixels)"
+        accessibilityIdentifier:nil
+        detailTextBlock:^NSString *() {
+            return [NSString stringWithFormat:@"%.0f px", GetGestureDeadzone()];
+        }
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+            NSMutableArray *rows = [NSMutableArray array];
+            for (NSString *option in deadzoneOptions) {
+                YTSettingsSectionItem *item = [%c(YTSettingsSectionItem) checkmarkItemWithTitle:[NSString stringWithFormat:@"%@ px", option]
+                    titleDescription:nil
+                    selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+                        [[NSUserDefaults standardUserDefaults] setFloat:[option floatValue] forKey:GestureDeadzoneKey];
+                        [delegate reloadData];
+                        return YES;
+                    }];
+                [rows addObject:item];
+            }
+            NSUInteger selectedIndex = [deadzoneOptions indexOfObject:[NSString stringWithFormat:@"%.0f", GetGestureDeadzone()]];
+            if (selectedIndex == NSNotFound) selectedIndex = 2; // Default to 20
+            YTSettingsPickerViewController *picker = [[%c(YTSettingsPickerViewController) alloc] initWithNavTitle:@"Gesture Deadzone"
+                pickerSectionTitle:nil
+                rows:rows
+                selectedItemIndex:selectedIndex
+                parentResponder:[delegate parentResponder]];
+            [delegate pushViewController:picker];
+            return YES;
+        }];
+    [sectionItems addObject:gestureDeadzone];
+    
+    // Sensitivity setting
+    NSArray *sensitivityOptions = @[@"0.5", @"0.75", @"1.0", @"1.25", @"1.5", @"2.0", @"2.5"];
+    YTSettingsSectionItem *gestureSensitivity = [%c(YTSettingsSectionItem) itemWithTitle:@"Gesture Sensitivity"
+        titleDescription:@"How responsive the gesture is to movement"
+        accessibilityIdentifier:nil
+        detailTextBlock:^NSString *() {
+            return [NSString stringWithFormat:@"%.2fx", GetGestureSensitivity()];
+        }
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+            NSMutableArray *rows = [NSMutableArray array];
+            for (NSString *option in sensitivityOptions) {
+                YTSettingsSectionItem *item = [%c(YTSettingsSectionItem) checkmarkItemWithTitle:[NSString stringWithFormat:@"%@x", option]
+                    titleDescription:nil
+                    selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger index) {
+                        [[NSUserDefaults standardUserDefaults] setFloat:[option floatValue] forKey:GestureSensitivityKey];
+                        [delegate reloadData];
+                        return YES;
+                    }];
+                [rows addObject:item];
+            }
+            NSUInteger selectedIndex = [sensitivityOptions indexOfObject:[NSString stringWithFormat:@"%.1f", GetGestureSensitivity()]];
+            if (selectedIndex == NSNotFound) {
+                selectedIndex = [sensitivityOptions indexOfObject:[NSString stringWithFormat:@"%.2f", GetGestureSensitivity()]];
+            }
+            if (selectedIndex == NSNotFound) selectedIndex = 2; // Default to 1.0
+            YTSettingsPickerViewController *picker = [[%c(YTSettingsPickerViewController) alloc] initWithNavTitle:@"Gesture Sensitivity"
+                pickerSectionTitle:nil
+                rows:rows
+                selectedItemIndex:selectedIndex
+                parentResponder:[delegate parentResponder]];
+            [delegate pushViewController:picker];
+            return YES;
+        }];
+    [sectionItems addObject:gestureSensitivity];
+
+    // ============== AMBIENT MODE SETTINGS ==============
+    
+    YTSettingsSectionItem *disableAmbientPortrait = [%c(YTSettingsSectionItem) switchItemWithTitle:@"Disable Ambient Mode (Portrait)"
+        titleDescription:@"Disable ambient mode when watching in portrait mode"
+        accessibilityIdentifier:nil
+        switchOn:GetDisableAmbientModePortrait()
+        switchBlock:^BOOL (YTSettingsCell *cell, BOOL enabled) {
+            [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:DisableAmbientModePortraitKey];
+            return YES;
+        }
+        settingItemId:0];
+    [sectionItems addObject:disableAmbientPortrait];
+    
+    YTSettingsSectionItem *disableAmbientFullscreen = [%c(YTSettingsSectionItem) switchItemWithTitle:@"Disable Ambient Mode (Fullscreen)"
+        titleDescription:@"Disable ambient mode when watching in fullscreen mode"
+        accessibilityIdentifier:nil
+        switchOn:GetDisableAmbientModeFullscreen()
+        switchBlock:^BOOL (YTSettingsCell *cell, BOOL enabled) {
+            [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:DisableAmbientModeFullscreenKey];
+            return YES;
+        }
+        settingItemId:0];
+    [sectionItems addObject:disableAmbientFullscreen];
 
     // ============== END GESTURE SETTINGS ==============
 

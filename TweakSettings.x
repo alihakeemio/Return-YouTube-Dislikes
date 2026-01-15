@@ -74,3 +74,12 @@ BOOL GetGestureHapticFeedback(void) {
     NSNumber *value = [defaults objectForKey:@"RYD-GESTURE-HAPTIC"];
     return value ? [value boolValue] : YES;
 }
+
+// Ambient mode settings implementations
+BOOL GetDisableAmbientModePortrait(void) {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"RYD-DISABLE-AMBIENT-PORTRAIT"];
+}
+
+BOOL GetDisableAmbientModeFullscreen(void) {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"RYD-DISABLE-AMBIENT-FULLSCREEN"];
+}

@@ -751,6 +751,35 @@ static void layoutActionBar(YTReelWatchPlaybackOverlayView *self) {
 
 // ============== END GESTURE CONTROLS ==============
 
+// ============== AMBIENT MODE CONTROLS ==============
+
+@interface YTWatchViewController : UIViewController
+@property (nonatomic, readonly) BOOL fullscreen;
+@end
+
+@interface YTWatchCinematicContainerController : NSObject
+@property (nonatomic, weak) id parentResponder;
+@end
+
+%hook YTWatchCinematicContainerController
+
+- (BOOL)isCinematicLightingAvailable {
+    YTWatchViewController *watchViewController = (YTWatchViewController *)self.parentResponder;
+    BOOL isFullscreen = watchViewController.fullscreen;
+    
+    if (GetDisableAmbientModePortrait() && !isFullscreen) {
+        return NO;
+    }
+    if (GetDisableAmbientModeFullscreen() && isFullscreen) {
+        return NO;
+    }
+    return %orig;
+}
+
+%end
+
+// ============== END AMBIENT MODE CONTROLS ==============
+
 %ctor {
     cache = [NSCache new];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];

@@ -62,6 +62,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 #define GestureSensitivityKey @"RYD-GESTURE-SENSITIVITY"
 #define GestureHapticFeedbackKey @"RYD-GESTURE-HAPTIC"
 
+// Ambient mode settings keys
+#define DisableAmbientModePortraitKey @"RYD-DISABLE-AMBIENT-PORTRAIT"
+#define DisableAmbientModeFullscreenKey @"RYD-DISABLE-AMBIENT-FULLSCREEN"
+
 // Gesture helper functions
 BOOL GesturesEnabled(void);
 NSInteger GetGestureTopSelection(void);
@@ -70,6 +74,10 @@ NSInteger GetGestureBottomSelection(void);
 CGFloat GetGestureDeadzone(void);
 CGFloat GetGestureSensitivity(void);
 BOOL GetGestureHapticFeedback(void);
+
+// Ambient mode helper functions
+BOOL GetDisableAmbientModePortrait(void);
+BOOL GetDisableAmbientModeFullscreen(void);
 
 // Player gesture interface extensions
 @class YTPlayerView;

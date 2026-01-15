@@ -29,4 +29,8 @@ extern CGFloat GetGestureDeadzone(void);
 extern CGFloat GetGestureSensitivity(void);
 extern BOOL GetGestureHapticFeedback(void);
 
+// Ambient mode settings
+extern BOOL GetDisableAmbientModePortrait(void);
+extern BOOL GetDisableAmbientModeFullscreen(void);
+
 #endif
