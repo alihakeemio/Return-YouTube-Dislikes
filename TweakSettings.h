@@ -2,6 +2,7 @@
 #define TWEAK_SETTINGS_H_
 
 #import <objc/objc.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 BOOL TweakEnabled();
 BOOL VoteSubmissionEnabled();

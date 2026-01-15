@@ -20,7 +20,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = YouTubeDislikesReturn
 $(TWEAK_NAME)_FILES = Settings.x TweakSettings.x API.x Vote.x Tweak.x
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -DAPI_URL="\"${API_URL}\"" -DTWEAK_NAME="\"${TWEAK_DISPLAY_NAME}\""
-$(TWEAK_NAME)_FRAMEWORKS = MediaPlayer AVFoundation UIKit
+$(TWEAK_NAME)_FRAMEWORKS = MediaPlayer AVFoundation UIKit CoreGraphics
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
