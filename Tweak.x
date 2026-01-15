@@ -822,58 +822,21 @@ static void layoutActionBar(YTReelWatchPlaybackOverlayView *self) {
     %init;
 }
 
+// ################
+
 %hook YTSingleVideoController
 
 - (float)playbackRate {
-    if (TweakEnabled() && SpeedCompatibilityEnabled()) {
-        // Use a safety check to ensure the method exists
-        if ([self respondsToSelector:@selector(rateModel)]) {
-            // CAST the result to our specific model class
-            YTPlaybackRateModel *model = (YTPlaybackRateModel *)[self rateModel];
-            
-            if (model && [model respondsToSelector:@selector(rate)]) {
-                // Accessing via property dot-notation after casting is safe
-                return model.rate;
-            }
+    // Check if the new rateModel system exists
+    if ([self respondsToSelector:@selector(rateModel)]) {
+        // Cast to our model class to avoid 'multiple methods named rate' error
+        YTPlaybackRateModel *model = (YTPlaybackRateModel *)[self rateModel];
+        if (model && [model respondsToSelector:@selector(rate)]) {
+            return model.rate;
         }
     }
-    return %orig;
-}
-
-%end
-
-%hook YTPlaybackRateService
-
-- (id)playbackRateModels {
-    NSArray *originalModels = %orig;
-    if (!TweakEnabled()) return originalModels;
-
-    NSMutableArray *models = [originalModels mutableCopy];
-    
-    BOOL hasExtraSpeeds = NO;
-    for (id m in models) {
-        // Cast to our model to check the rate
-        if ([m isKindOfClass:%c(YTPlaybackRateModel)]) {
-            YTPlaybackRateModel *model = (YTPlaybackRateModel *)m;
-            if (model.rate > 2.1f) {
-                hasExtraSpeeds = YES;
-                break;
-            }
-        }
-    }
-
-    if (!hasExtraSpeeds) {
-        Class modelClass = %c(YTPlaybackRateModel);
-        if (modelClass) {
-            YTPlaybackRateModel *model3 = [[modelClass alloc] initWithRate:3.0f label:@"3.0x"];
-            YTPlaybackRateModel *model4 = [[modelClass alloc] initWithRate:4.0f label:@"4.0x"];
-            
-            if (model3) [models addObject:model3];
-            if (model4) [models addObject:model4];
-        }
-    }
-    
-    return [models copy];
+    // Fallback to normal speed if model isn't found, preventing the crash
+    return 1.0f;
 }
 
 %end

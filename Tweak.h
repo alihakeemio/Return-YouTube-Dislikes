@@ -122,17 +122,12 @@ BOOL GetDisableAmbientModeFullscreen(void);
 @property (assign, nonatomic) BOOL didGetVote;
 @end
 
-// In Tweak.h
+
+// Define the new model that holds the speed value
 @interface YTPlaybackRateModel : NSObject
 @property(readonly, nonatomic) float rate;
-- (instancetype)initWithRate:(float)rate label:(id)label;
 @end
 
-// Use a Category (RYD) to avoid the "duplicate interface" error
 @interface YTSingleVideoController (RYD)
 - (YTPlaybackRateModel *)rateModel;
-@end
-
-@interface YTPlaybackRateService : NSObject
-- (NSArray <YTPlaybackRateModel *> *)playbackRateModels;
 @end
