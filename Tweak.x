@@ -753,10 +753,7 @@ static void layoutActionBar(YTReelWatchPlaybackOverlayView *self) {
 
 // ============== AMBIENT MODE CONTROLS ==============
 
-@interface YTWatchViewController : UIViewController
-@property (nonatomic, readonly) BOOL fullscreen;
-@end
-
+// We only need this interface to access the parentResponder
 @interface YTWatchCinematicContainerController : NSObject
 @property (nonatomic, weak) id parentResponder;
 @end
@@ -764,15 +761,41 @@ static void layoutActionBar(YTReelWatchPlaybackOverlayView *self) {
 %hook YTWatchCinematicContainerController
 
 - (BOOL)isCinematicLightingAvailable {
-    YTWatchViewController *watchViewController = (YTWatchViewController *)self.parentResponder;
-    BOOL isFullscreen = watchViewController.fullscreen;
+    // 1. Get the controller (treat as generic UIViewController to be safe)
+    UIViewController *watchViewController = (UIViewController *)self.parentResponder;
     
+    // 2. Safely determine if we are in fullscreen
+    BOOL isFullscreen = NO;
+
+    // Check 1: Does the controller have a 'fullscreen' property?
+    if ([watchViewController respondsToSelector:@selector(fullscreen)]) {
+        isFullscreen = [[watchViewController valueForKey:@"fullscreen"] boolValue];
+    }
+    // Check 2: Does it have an 'isFullScreen' property? (Common alternate name)
+    else if ([watchViewController respondsToSelector:@selector(isFullScreen)]) {
+        isFullscreen = [[watchViewController valueForKey:@"isFullScreen"] boolValue];
+    }
+    // Check 3 (Fallback): Compare the view size to the screen size
+    else {
+        CGRect viewFrame = watchViewController.view.frame;
+        CGRect screenBounds = [UIScreen mainScreen].bounds;
+        
+        // Check if dimensions match (handling both portrait and landscape rotation)
+        BOOL matchesBounds = CGSizeEqualToSize(viewFrame.size, screenBounds.size);
+        BOOL matchesRotated = (viewFrame.size.width == screenBounds.size.height) && 
+                              (viewFrame.size.height == screenBounds.size.width);
+                              
+        isFullscreen = matchesBounds || matchesRotated;
+    }
+
+    // 3. Run your tweak logic with the safe boolean
     if (GetDisableAmbientModePortrait() && !isFullscreen) {
         return NO;
     }
     if (GetDisableAmbientModeFullscreen() && isFullscreen) {
         return NO;
     }
+    
     return %orig;
 }
 
